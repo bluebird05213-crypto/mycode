@@ -53,11 +53,12 @@ pnpm build
 - 稳定版本使用标签，例如 `v0.1.0`、`v0.2.0`。
 - 出现问题时，可以切换到上一个标签或从标签创建修复分支。
 
-后续 Codex 修改流程：检查当前分支 → 修改 → `pnpm build` → 浏览器回归 → 提交 → 推送到 GitHub。远程仓库地址确认后，才会启用自动推送。
+远程仓库：<https://github.com/bluebird05213-crypto/mycode>
+
+后续 Codex 修改流程：检查当前分支 → 修改 → `pnpm build` → 浏览器回归 → 提交 → 自动推送到 GitHub。具体的初学者操作见 [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md)。
 
 ## 已知注意事项
 
 - PDF 版式差异很大，导入后应抽查文字题、材料题和图形题。
 - 题库自动解析是本地规则兜底，不应把缺失答案当成确认答案。
 - `pnpm build` 中第三方图标库可能产生 module-level directive 提示，不影响构建结果。
-
