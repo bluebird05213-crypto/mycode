@@ -1,0 +1,6 @@
+.original-page img,.original-backup img{cursor:zoom-in}
+.image-zoom-layer{position:fixed;inset:0;z-index:1000;background:rgba(16,26,45,.82);display:flex;align-items:center;justify-content:center;padding:28px;cursor:zoom-out}
+.image-zoom-panel{position:relative;max-width:min(1180px,96vw);max-height:94vh;background:#fff;border-radius:14px;padding:44px 14px 14px;box-shadow:0 24px 80px #07132666;cursor:default}
+.image-zoom-panel img{display:block;max-width:calc(96vw - 28px);max-height:calc(94vh - 58px);width:auto;height:auto;object-fit:contain;background:#eef1f5;cursor:zoom-out}
+.image-zoom-close{position:absolute;right:10px;top:9px;border-radius:8px;background:#eef2f7;color:#53657f;padding:6px 10px;font-size:11px}
+.image-zoom-close:hover{background:#dfe7f1}

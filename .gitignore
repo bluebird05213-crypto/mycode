@@ -1,0 +1,26 @@
+node_modules/
+.pnpm-store/
+dist/
+tmp/
+.env
+.env.*
+!.env.example
+*.local
+
+# Local browser/PDF data should never enter GitHub.
+*.pdf
+*.PDF
+data/private/
+data/uploads/
+*.sqlite
+*.db
+
+# Editor and OS files.
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Codex working notes, kept local to the workspace.
+task_plan.md
+findings.md
+progress.md
