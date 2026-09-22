@@ -4,7 +4,7 @@
 
 ## 当前版本
 
-`0.1.0`：本地可运行的最小适用版本，数据默认保存在浏览器本机，不上传用户题库。
+`0.2.0-beta`：加入本机 DeepSeek 代理、题目图片上下文和题目资料包导出；未配置 Key 时仍自动回退到本地提示。
 
 ## 快速启动
 
@@ -13,6 +13,14 @@
 ```powershell
 pnpm install
 pnpm dev
+```
+
+如需启用 AI 追问，另开一个终端启动本机代理：
+
+```powershell
+Copy-Item .env.example .env.local
+# 编辑 .env.local，填写 DEEPSEEK_API_KEY；不要把 Key 发到聊天或提交到 Git
+pnpm ai:server
 ```
 
 打开终端输出的本地地址，通常是 `http://127.0.0.1:5173/`。
@@ -36,6 +44,8 @@ pnpm build
 | 自动解析 | `src/analysis.js` | 文字、数字、材料、性格题的本地解析和答题技巧兜底 |
 | 原图显示 | `src/OriginalPage.jsx` | 题目级裁切图、备用原图、点击放大 |
 | 题目助手 | `src/StudyAssistant.jsx` | 本机追问、复制当前题目到 Codex、可调整尺寸 |
+| DeepSeek 代理 | `server/deepseek-server.mjs` | 在本机保存 Key，转发当前题目文字和题图，不把 Key 暴露给浏览器 |
+| AI 配置模板 | `.env.example` | 说明本机代理需要的环境变量，不含真实密钥 |
 | 样式 | `src/*.css` | 页面布局、分类卡片、PDF 图片、助手和反馈样式 |
 
 ## 数据与隐私边界
@@ -43,7 +53,10 @@ pnpm build
 - 题库 PDF 和学习记录保存在浏览器本机 IndexedDB/localStorage。
 - 个人 PDF、错题记录和浏览器数据不应提交到 GitHub。
 - `src` 中只保留解析逻辑和界面代码；真实题库文件应通过网页上传。
-- 如果未来接入外部 AI 服务，必须另行设计 API 密钥和隐私边界，目前题目助手不调用外部模型。
+- DeepSeek Key 只应保存在未跟踪的 `.env.local`；浏览器只请求本机 `127.0.0.1:3001`，不会接触 Key。
+- AI 每次只接收当前题目的题干、选项、页面解析/反馈和最多 4 张当前题图，不上传整套题库或浏览器学习记录。
+- 图形题可以通过“导出题目包”生成包含题干、选项、解析和题图的本地 HTML，便于完整复制到 Codex。
+- 未启动代理或未配置 Key 时，助手会显示原因并使用本地规则提示，不影响刷题。
 
 ## Git 版本工作流
 

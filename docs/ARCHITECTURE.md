@@ -9,7 +9,8 @@ main.jsx
  ├─ libraryRepair.js ── pdfStore.js + pdfParser.js
  ├─ OriginalPage.jsx ── pdfRuntime.js
  ├─ analysis.js
- └─ StudyAssistant.jsx
+ ├─ StudyAssistant.jsx ── http://127.0.0.1:3001/api/assistant
+ └─ server/deepseek-server.mjs ── DeepSeek API
 ```
 
 ## 业务边界
@@ -41,10 +42,13 @@ main.jsx
 
 这样可以减少单文件修改冲突，也便于 Codex 只调用需要的模块。
 
+### 6. AI 助手与图片上下文
+
+`StudyAssistant.jsx` 只从当前题卡读取题型、题干、选项、页面反馈和当前题图，并通过本机代理发送。`server/deepseek-server.mjs` 读取 `.env.local` 中的 Key，调用 DeepSeek 的兼容 Chat Completions 接口；Key 不进入前端，也不写入题库数据。存在题图时使用多模态消息内容，最多发送 4 张图片；请求失败或未配置 Key 时，前端回退到 `analysis.js` 的本地提示。题目资料包导出是离线 HTML，不会自动上传。
+
 ## 版本兼容原则
 
 - 新增字段时保留旧字段读取能力。
 - 修改题库结构时增加 `schemaVersion` 和迁移函数。
 - 不把个人题库文件作为代码 fixture 提交。
 - 每次解析器修改都用一份脱敏小样本做构建和浏览器回归。
-
