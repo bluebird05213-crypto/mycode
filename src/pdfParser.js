@@ -83,14 +83,30 @@ function buildQuestion(segment,source,fileName,index){
 
 function figureAnalysis(text){const t=text.replace(/\s+/g,'');let kind='结构/位置变化',visual='主体轮廓基本不变，变化集中在元素的位置、方向或填充属性。',rule='先按对应位置逐格比较，再用连续两步验证同一规律。';if(/旋转|顺时针|逆时针|角度|转动/.test(t)){kind='旋转类';visual='图形主体相同，但标记的朝向或所在扇区发生规律性转动。';rule='检查每一步的旋转方向和角度；若角度一致，就将上一幅整体旋转同样角度。'}else if(/叠加|相同.*消|异或|求同|求异|相加|相减/.test(t)){kind='叠加运算类';visual='多个图形的对应位置可以一一对齐，变化来自重合、消除或保留。';rule='把对应位置逐点比较，检查求同、求异、相同消除或颜色叠加，不要把整幅图凭感觉比较。'}else if(/平移|移动|挪|向左|向右|向上|向下/.test(t)){kind='平移类';visual='相同元素没有明显增减，主要是沿横向、纵向或固定路径换了位置。';rule='记录每个元素移动的方向、格数和循环周期；不同元素可能分别沿不同方向移动。'}else if(/对称|轴对称|中心对称/.test(t)){kind='对称类';visual='图形两侧或绕中心呈镜像关系，重点是对称轴与元素相对位置。';rule='先确定对称轴或中心，再检查翻转后的位置是否完全对应。'}else if(/数量|递增|递减|个数|几个/.test(t)){kind='数量类';visual='轮廓变化不明显，但点、线、角、封闭空间或黑块数量在变化。';rule='分别统计关键元素，再检查等差、周期、奇偶或前后运算关系。'}else if(/内外|里外|封闭|空间/.test(t)){kind='空间/内外关系类';visual='变化发生在内外层、封闭区域或图形嵌套关系中。';rule='先拆外框、内框和内部标记三层，再比较元素是在层内移动还是层间交换。'}return{visual:`第一眼先归入“${kind}”：${visual}`,rule,check:'先用前两幅图提出规律，再用下一幅独立验证；若不能同时解释全部图形，立即换规律。',tip:'一次只检查一个维度：位置 → 样式 → 属性 → 数量 → 空间；解析文字出现“移动/旋转/叠加”等词时，优先验证对应类别。'} }
 
+const SLIDE_TITLE=/校招真题/;
+const SLIDE_FIGURE=/(?:图\s*[123]|黑块|白块|阴影|旋转|顺时针|逆时针|平移|封闭面|中心对称|求同|去同存异|线段|箭头|黑球|内图|外图)/;
+const SLIDE_MATERIAL=/(?:\d[\d.]*\s*(?:%|÷|\/|\*|×|≈|=)|增长率|比重|同比|环比|截位|百分点)/;
+function slideExplanation(page){return page.lines.filter((line,index)=>index>0&&!/^\s*√\s*$/.test(line)&&!/PreTalent璞睿|https?:\/\//i.test(line)).join(' ').replace(/√/g,'').trim()}
+function slideCategory(text,current){if(SLIDE_FIGURE.test(text))return'figure';if(SLIDE_MATERIAL.test(text))return'material';return current}
+function parseVisualSlidePages(pages,source,fileName){
+ const candidates=pages.filter(page=>page.pageNumber>1&&page.lines.some(line=>SLIDE_TITLE.test(line))&&!page.lines.some(line=>/https?:\/\/|上海：|8034\s*4922/.test(line)));
+ if(candidates.length<Math.max(8,pages.length*.55))return null;
+ let current='verbal';const questions=candidates.map((page,index)=>{
+  const explanation=slideExplanation(page);current=slideCategory(explanation,current);const category=current,options=['选项 A（见上方题图）','选项 B（见上方题图）','选项 C（见上方题图）','选项 D（见上方题图）'],stem=`第 ${index+1} 题（题干与选项见上方原题图）`,autoAnalysis=generateAutoAnalysis({category,stem,options,answer:null}),guide=category==='figure'?figureAnalysis(explanation):{},part={pageNumber:page.pageNumber,top:.06,bottom:.92,redactRed:true};
+  return{id:`upload-${Date.now()}-${index}`,source,category,type:'截图型导入题',stem,options,answer:null,explain:explanation||autoAnalysis.summary,tip:guide.tip||autoAnalysis.tip,analysis:category==='figure'?{...guide,label:'图形规律',source:explanation?'原题解析 + 自动分层':'自动分层'}:autoAnalysis,confidence:.82,reason:`识别为一页一题的截图型 PDF；第 ${page.pageNumber} 页已隐藏红色答案标记`,fileName,pageNumber:page.pageNumber,sourcePages:[page.pageNumber],backupParts:[part],cropTop:part.top,cropBottom:part.bottom,visualParts:[part],visualCropVersion:4,answerSafeVersion:2,redactRed:true,needsVisual:true,needsReview:true,rawText:explanation.slice(0,4000),...guide};
+ });
+ return{questions,diagnostics:{pages:pages.length,totalLines:pages.reduce((n,p)=>n+p.lines.length,0),questionAnchors:candidates.length,answerAnchors:0,coverage:1,mode:'visual-slide',warnings:['检测到整页截图型题库：题干和选项将以已清除红色答案标记的原题图展示；标准答案暂不自动确认。'],blocked:false}};
+}
+
 export function parsePages(pages,source,fileName){
  const segments=[];let currentCategory='unknown',active=null;
  for(const page of pages){
   for(const entry of page.lineObjects){const line=entry.text;currentCategory=categoryFrom(line,currentCategory);const m=line.match(QUESTION);if(m){if(active){active.nextBoundary={pageNumber:page.pageNumber,y:entry.y,height:page.height};if(active.pageNumber===page.pageNumber)active.cropBottom=Math.min(1,(page.height-entry.y-16)/page.height);segments.push(active)}active={pageNumber:page.pageNumber,category:currentCategory,lines:[line],records:[{...entry,pageNumber:page.pageNumber,height:page.height}],cropTop:Math.max(0,(page.height-entry.y-22)/page.height),cropBottom:1}}else if(active){active.lines.push(line);active.records.push({...entry,pageNumber:page.pageNumber,height:page.height})}}
  }
  if(active)segments.push(active);
- const questions=segments.filter(s=>s.lines.some(l=>OPTION.test(l))||s.lines.some(l=>ANSWER.test(l))).map((s,i)=>buildQuestion(s,source,fileName,i));
+ let questions=segments.filter(s=>s.lines.some(l=>OPTION.test(l))||s.lines.some(l=>ANSWER.test(l))).map((s,i)=>buildQuestion(s,source,fileName,i));
  const answerAnchors=pages.reduce((n,p)=>n+p.lines.filter(l=>ANSWER.test(l)).length,0),questionAnchors=segments.length;
+ if(!questions.length){const visualSlides=parseVisualSlidePages(pages,source,fileName);if(visualSlides)return visualSlides}
  const expected=Math.max(answerAnchors,questionAnchors),coverage=expected?questions.length/expected:0;
  const warnings=[];if(pages.length>=10&&questions.length<Math.max(10,pages.length*.5))warnings.push(`文件有 ${pages.length} 页，但只形成 ${questions.length} 道题，识别结果异常偏少。`);if(expected>=10&&coverage<.6)warnings.push(`检测到约 ${expected} 个题目/答案锚点，仅成功结构化 ${questions.length} 道。`);
  return{questions,diagnostics:{pages:pages.length,totalLines:pages.reduce((n,p)=>n+p.lines.length,0),questionAnchors,answerAnchors,coverage,warnings,blocked:warnings.length>0&&questions.length<10}};
